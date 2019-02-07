@@ -21,6 +21,7 @@ module.exports = {
             // This will not catch the throw!
             console.error(`Catched err: ${err}`);
         }
+        console.log("Hola");
     },
     errorFirstCallback: function() {
         fs.readFile('/some/file/that/does-not-exist', (err, data) => {
@@ -30,5 +31,5 @@ module.exports = {
             }
             console.log(data);
         });
-    } 
+    }
 }
