@@ -1,3 +1,4 @@
+const game = require("./gameState");
 module.exports = () => {
 	let players = {},
 		onWait = [],
@@ -13,17 +14,34 @@ module.exports = () => {
 		printListStatus();
 		while (onWait.length >= 2) {
 			console.log("Constructing room...");
-			/**
-			 * 
-			 * Reemplazar este bloque
-			 * 
-			 */
-			const p1 = players[onWait.pop()].user.name;
-			const p2 = players[onWait.pop()].user.name;
-			console.log(`We created a match for ${p1} and ${p2}`)
+			createMatch(onWait.shift(), onWait.shift());
 		}
 	}
-	
+
+	function createMatch(p1ID, p2ID) {
+		const roomId = p1ID + p2ID;
+		players[p1ID].roomId = roomId;
+		players[p2ID].roomId = roomId;
+
+		if (!onMatch[roomId]) onMatch[roomId] = game.newGame({
+			players: [players[p1ID], players[p2ID]],
+			roomId,
+		});
+
+		players[p1ID].socket.emit("gameState", game.newGame({
+			players: [players[p1ID], players[p2ID]],
+			roomId,
+			playerId: 0,
+			opponentId: 1,
+		}));
+		players[p2ID].socket.emit("gameState", game.newGame({
+			players: [players[p1ID], players[p2ID]],
+			roomId,
+			playerId: 1,
+			opponentId: 0,
+		}));
+	}
+
 	return {
 		// user: {socket, user}
 		userConnect: ({ socket, user }) => {
@@ -38,12 +56,12 @@ module.exports = () => {
 		userDisconnect: (id) => {
 			// Close ongoing game related to player if any
 			console.log("On disconnect", id);
-			if (players[id].roomID && onMatch[players[id].roomID]) {
-				const roomID = players[id].roomID;
+			if (players[id].roomId && onMatch[players[id].roomId]) {
+				const roomId = players[id].roomId;
 				// Put all players back on onWait
-				onMatch[roomID].players.map(player => onWait.push(player.id));
+				onMatch[roomId].players.map(player => onWait.push(player.id));
 				// Delete match room
-				delete onMatch[players[id].roomID];
+				delete onMatch[players[id].roomId];
 				// If the object gets deleted, reset it
 				if (!onMatch) onMatch = {};
 			}
